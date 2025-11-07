@@ -8,7 +8,7 @@ import io
 from datetime import datetime
 
 # === Streamlit Config ===
-st.set_page_config(page_title="Response Curve Generator", layout="wide")
+st.set_page_config(page_title="Response Curve Generator v1.2", layout="wide")
 st.title("📈 Response Curve Generator")
 
 # === Instruction Message ===
@@ -190,3 +190,4 @@ if uploaded_file:
 
 
     st.download_button("📥 Download Response Curves HTML", html_buffer.getvalue(), "response_curves.html", "text/html")
+
