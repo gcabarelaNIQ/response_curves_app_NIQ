@@ -8,8 +8,8 @@ import io
 from datetime import datetime
 
 # === Streamlit Config ===
-st.set_page_config(page_title="Response Curve Generator", layout="wide")
-st.title("📈 Response Curve Generator v1.3.1")
+st.set_page_config(page_title="Response Curve Generator 2.0", layout="wide")
+st.title("📈 Response Curve Generator 2.0")
 
 # === Instruction Message ===
 st.markdown("""
@@ -207,4 +207,5 @@ if uploaded_file:
         html_buffer.write(pio.to_html(fig2, full_html=False, include_plotlyjs=False))
 
     st.download_button("📥 Download Response Curves HTML", html_buffer.getvalue(), "response_curves.html", "text/html")
+
 
