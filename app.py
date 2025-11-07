@@ -188,4 +188,5 @@ if uploaded_file:
         st.plotly_chart(fig2, use_container_width=True)
         html_buffer.write(pio.to_html(fig2, full_html=False, include_plotlyjs=False))
 
+
     st.download_button("📥 Download Response Curves HTML", html_buffer.getvalue(), "response_curves.html", "text/html")
