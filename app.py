@@ -45,7 +45,7 @@ if uploaded_file:
     decomps_val = xls.parse("Decomps Value", usecols=["EndPeriod", "final_0_val"])
     media_metrics = xls.parse("Media KeyMetrics")
     media_spends = xls.parse("Media Spends")
-    model_result = xls.parse("Model Result", header=None, skiprows=1).iloc[:, [1, 2]]
+    model_result = xls.parse("Model Result", header=None, skiprows=1).iloc[:, [2, 3]]
     model_result.columns = ["Variable Name", "Raw Name"]
     model_coeffs = xls.parse("Model Coefficients", header=None, skiprows=1).iloc[:, [1, 2]]
     model_coeffs.columns = ["Raw Name", "Coefficient"]
@@ -207,3 +207,4 @@ if uploaded_file:
         html_buffer.write(pio.to_html(fig2, full_html=False, include_plotlyjs=False))
 
     st.download_button("📥 Download Response Curves HTML", html_buffer.getvalue(), "response_curves.html", "text/html")
+
