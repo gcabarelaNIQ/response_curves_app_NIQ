@@ -8,8 +8,8 @@ import io
 from datetime import datetime
 
 # === Streamlit Config ===
-st.set_page_config(page_title="Response Curve Generator v1.2", layout="wide")
-st.title("📈 Response Curve Generator v1.2")
+st.set_page_config(page_title="Response Curve Generator", layout="wide")
+st.title("📈 Response Curve Generator v1.3.1")
 
 # === Instruction Message ===
 st.markdown("""
@@ -23,13 +23,22 @@ Make sure to upload the **COE file exactly as you received it**, and confirm tha
 - `Model Coefficients`  
 """)
 
+# Status placeholder
+status = st.empty()
+
 uploaded_file = st.file_uploader("Upload your MMM Results Excel file", type=["xlsx"])
 
 if uploaded_file:
-    st.success("File uploaded successfully! Processing...")
+    status.success("File uploaded successfully! Processing...")
 
     # === Load Excel ===
     xls = pd.ExcelFile(uploaded_file, engine='openpyxl')
+
+    # Validate required sheets
+    required_sheets = ["Decomps Vol", "Decomps Value", "Media KeyMetrics", "Media Spends", "Model Result", "Model Coefficients"]
+    if not all(sheet in xls.sheet_names for sheet in required_sheets):
+        status.error("❌ Missing required sheets. Please upload the correct COE file.")
+        st.stop()
 
     # Load sheets
     decomps_vol = xls.parse("Decomps Vol", usecols=["EndPeriod", "final_0_vol"])
@@ -69,6 +78,15 @@ if uploaded_file:
     # Merge with coefficients
     params_df = model_result.merge(model_coeffs, on="Raw Name", how="left")
     params_df = params_df[params_df["Variable Name"].isin(valid_channels)]
+
+    # Validate params_df
+    if params_df.empty:
+        status.error("❌ No media parameters found. Check your file.")
+        st.stop()
+
+    # Update status
+    status.info("✅ File processed successfully! Ready to select options.")
+    st.write("✅ Found channels:", params_df["Variable Name"].tolist())
 
     # === UI Options ===
     st.subheader("Options")
@@ -188,7 +206,4 @@ if uploaded_file:
         st.plotly_chart(fig2, use_container_width=True)
         html_buffer.write(pio.to_html(fig2, full_html=False, include_plotlyjs=False))
 
-
     st.download_button("📥 Download Response Curves HTML", html_buffer.getvalue(), "response_curves.html", "text/html")
-
-
