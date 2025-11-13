@@ -204,32 +204,6 @@ if uploaded_file:
                                   mode='markers+text', text=["Current ROAS"], textposition="bottom center",
                                   marker=dict(color='green', size=10), name='Current ROAS', yaxis='y2'))
         
-        # ✅ Intersection logic with condition
-        import numpy as np
-        diff = np.array(roas_values) - np.array(marginal_roas_values)
-        cross_indices = np.where(np.diff(np.sign(diff)))[0]  # find crossings
-        
-        if len(cross_indices) > 0:  # Only add if curves cross
-            idx = cross_indices[0]  # first crossing
-            x_cross = spend_values[idx]
-        
-            # Add vertical dashed line
-            fig2.add_shape(
-                type="line",
-                x0=x_cross, x1=x_cross,
-                y0=0, y1=max(max(roas_values), max(marginal_roas_values)),
-                line=dict(color="white", dash="dash"),
-                xref="x", yref="y2"
-            )
-        
-            # Annotation with ROAS value to 3 decimals
-            fig2.add_annotation(
-                x=x_cross,
-                y=max(roas_values),
-                text=f"ROAS={roas_values[idx]:.3f}, Marginal={marginal_roas_values[idx]:.3f}",
-                showarrow=True, arrowhead=2
-            )
-        
         # Layout
         fig2.update_layout(
             title=f"{media_vehicle}: Spend vs Incremental Sales with ROAS and Marginal ROAS",
