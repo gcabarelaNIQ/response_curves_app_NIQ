@@ -230,6 +230,10 @@ if uploaded_file:
                 continue
     
             media_vehicle = row["Variable Name"]  # Sheet name
+            
+            # ✅ Find closest index to current_spend
+            current_index = min(range(len(spend_values)), key=lambda i: abs(spend_values[i] - current_spend))
+
     
             # Prepare data for this channel
             data = {
@@ -238,7 +242,7 @@ if uploaded_file:
                 "Revenue": incremental_values,
                 "ROAS": roas_values,
                 "Marginal ROAS": marginal_roas_values,
-                "Current": [current_inc_val if s == current_spend else "" for s in spend_values]
+                "Current": [current_inc_val if i == current_index else "" for i in range(len(spend_values))]
             }
     
             df = pd.DataFrame(data)
