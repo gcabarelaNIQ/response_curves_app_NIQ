@@ -219,16 +219,17 @@ if uploaded_file:
         html_buffer.write(pio.to_html(fig2, full_html=False, include_plotlyjs=False))
 
 
-    # Create an Excel file in memory
-    output = BytesIO()
-    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+    # Create Excel file on disk using openpyxl
+    excel_file = "response_curves.xlsx"
+    
+    with pd.ExcelWriter(excel_file, engine="openpyxl") as writer:
         for idx, row in params_df.iterrows():
             if row["Variable Name"] not in selected_channels:
                 continue
             if any(pd.isna(row[col]) for col in ["Half-life", "Steepness", "Saturation", "Coefficient"]):
                 continue
     
-            media_vehicle = row["Variable Name"]
+            media_vehicle = row["Variable Name"]  # Sheet name
     
             # Prepare data for this channel
             data = {
@@ -245,13 +246,10 @@ if uploaded_file:
             # Write to Excel sheet
             df.to_excel(writer, sheet_name=media_vehicle, index=False)
     
-    # Reset buffer position
-    output.seek(0)
-    
-    # Streamlit download button
+    # ✅ Streamlit download button
     st.download_button(
-        label="📥 Download RCs Data to Excel 📥",
-        data=output,
+        label="📥 Download RCs Data to Excel",
+        data=open(excel_file, "rb").read(),
         file_name="response_curves.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
