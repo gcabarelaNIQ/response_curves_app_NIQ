@@ -248,7 +248,7 @@ if uploaded_file:
     
     # ✅ Streamlit download button
     st.download_button(
-        label="📥 Download RCs Data to Excel",
+        label="📥 Download RCs Data to Excel 📥",
         data=open(excel_file, "rb").read(),
         file_name="response_curves.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
