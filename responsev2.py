@@ -5,6 +5,7 @@ import plotly.graph_objects as go
 import plotly.io as pio
 import re
 import io
+from io import BytesIO
 from datetime import datetime
 
 # === Streamlit Config ===
@@ -218,5 +219,39 @@ if uploaded_file:
         html_buffer.write(pio.to_html(fig2, full_html=False, include_plotlyjs=False))
 
 
-    st.download_button("📥 Download Response Curves HTML", html_buffer.getvalue(), "response_curves.html", "text/html")
-
+    # Create an Excel file in memory
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        for idx, row in params_df.iterrows():
+            if row["Variable Name"] not in selected_channels:
+                continue
+            if any(pd.isna(row[col]) for col in ["Half-life", "Steepness", "Saturation", "Coefficient"]):
+                continue
+    
+            media_vehicle = row["Variable Name"]
+    
+            # Prepare data for this channel
+            data = {
+                "Spend": spend_values,
+                "Execution": executions_curve,
+                "Revenue": incremental_values,
+                "ROAS": roas_values,
+                "Marginal ROAS": marginal_roas_values,
+                "Current": [current_inc_val if s == current_spend else "" for s in spend_values]
+            }
+    
+            df = pd.DataFrame(data)
+    
+            # Write to Excel sheet
+            df.to_excel(writer, sheet_name=media_vehicle, index=False)
+    
+    # Reset buffer position
+    output.seek(0)
+    
+    # Streamlit download button
+    st.download_button(
+        label="📥 Download RCs Data to Excel 📥",
+        data=output,
+        file_name="response_curves.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
