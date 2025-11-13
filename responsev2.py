@@ -155,7 +155,7 @@ if uploaded_file:
         current_roas = current_inc_val / current_spend if current_spend > 0 else 0
 
         curve_points = 180
-        executions_curve = np.linspace(0.1 * current_execution, 1.8 * current_execution, curve_points)
+        executions_curve = np.linspace(0.2 * current_execution, 1.8 * current_execution, curve_points)
         incremental_values, spend_values, roas_values, marginal_roas_values = [], [], [], []
 
         prev_val, prev_spend = 0, 0
@@ -179,10 +179,15 @@ if uploaded_file:
         fig1.add_trace(go.Scatter(x=[current_execution], y=[current_inc_val],
                                   mode='markers+text', text=["Current"], textposition="top center",
                                   marker=dict(color='red', size=10), name='Current Point'))
-        fig1.update_layout(title=f"{media_vehicle}: Execution vs Incremental Sales Value",
-                           xaxis_title="Execution", yaxis_title="Incremental Sales (Value)",
-                           legend=dict(orientation="h", yanchor="bottom", y=-0.3, xanchor="center", x=0.5),
-                           margin=dict(t=80, b=100))
+        fig1.update_layout(
+            title=f"{media_vehicle}: Execution vs Incremental Sales Value",
+            xaxis=dict(
+                title="Execution",
+                range=[0.2 * current_execution, 1.8 * current_execution]  # ✅ Align with executions_curve
+            ),
+            yaxis=dict(title="Incremental Sales (Value)"),
+            legend=dict(orientation="h", yanchor="bottom", y=-0.3, xanchor="center", x=0.5),
+            margin=dict(t=80, b=100))
         st.plotly_chart(fig1, use_container_width=True)
         html_buffer.write(pio.to_html(fig1, full_html=False, include_plotlyjs='cdn'))
 
@@ -199,36 +204,41 @@ if uploaded_file:
                                   mode='markers+text', text=["Current ROAS"], textposition="bottom center",
                                   marker=dict(color='green', size=10), name='Current ROAS', yaxis='y2'))
         
-        # 1. Find intersection
+        # ✅ Intersection logic with condition
         import numpy as np
         diff = np.array(roas_values) - np.array(marginal_roas_values)
-        idx = np.where(np.diff(np.sign(diff)))[0][0]  # first crossing
-        x_cross = spend_values[idx]
+        cross_indices = np.where(np.diff(np.sign(diff)))[0]  # find crossings
         
-        # 2. Add vertical dashed line
-        fig2.add_shape(
-            type="line",
-            x0=x_cross, x1=x_cross,
-            y0=0, y1=max(max(roas_values), max(marginal_roas_values)),
-            line=dict(color="white", dash="dash"),
-            xref="x", yref="y2"
-        )
+        if len(cross_indices) > 0:  # Only add if curves cross
+            idx = cross_indices[0]  # first crossing
+            x_cross = spend_values[idx]
         
-       
-        # Optimal point annotation with value
-        fig2.add_annotation(
-            x=x_cross,
-            y=max(roas_values),
-            text=f"Max ROAS (Optimal): {roas_values[idx]:.3f}",
-            showarrow=True, arrowhead=2)
+            # Add vertical dashed line
+            fig2.add_shape(
+                type="line",
+                x0=x_cross, x1=x_cross,
+                y0=0, y1=max(max(roas_values), max(marginal_roas_values)),
+                line=dict(color="white", dash="dash"),
+                xref="x", yref="y2"
+            )
+        
+            # Annotation with ROAS value to 3 decimals
+            fig2.add_annotation(
+                x=x_cross,
+                y=max(roas_values),
+                text=f"ROAS={roas_values[idx]:.3f}, Marginal={marginal_roas_values[idx]:.3f}",
+                showarrow=True, arrowhead=2
+            )
         
         # Layout
-        fig2.update_layout(title=f"{media_vehicle}: Spend vs Incremental Sales with ROAS and Marginal ROAS",
-                           xaxis_title="Spend",
-                           yaxis=dict(title="Incremental Sales (Value)"),
-                           yaxis2=dict(title="ROAS / Marginal ROAS", overlaying='y', side='right'),
-                           legend=dict(orientation="h", yanchor="bottom", y=-0.3, xanchor="center", x=0.5),
-                           margin=dict(t=80, b=100))
+        fig2.update_layout(
+            title=f"{media_vehicle}: Spend vs Incremental Sales with ROAS and Marginal ROAS",
+            xaxis=dict(title="Spend", range=[0.2 * current_spend, 1.8 * current_spend]),
+            yaxis=dict(title="Incremental Sales (Value)"),
+            yaxis2=dict(title="ROAS / Marginal ROAS", overlaying='y', side='right'),
+            legend=dict(orientation="h", yanchor="bottom", y=-0.3, xanchor="center", x=0.5),
+            margin=dict(t=80, b=100)
+        )
         
         st.plotly_chart(fig2, use_container_width=True)
         html_buffer.write(pio.to_html(fig2, full_html=False, include_plotlyjs=False))
