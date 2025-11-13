@@ -217,8 +217,10 @@ if uploaded_file:
         
         st.plotly_chart(fig2, use_container_width=True)
         html_buffer.write(pio.to_html(fig2, full_html=False, include_plotlyjs=False))
-
-
+    
+    def interpolate(x, x0, x1, y0, y1):
+        return y0 + (y1 - y0) * ((x - x0) / (x1 - x0))
+    
     # Create Excel file on disk using openpyxl
     excel_file = "response_curves.xlsx"
     
@@ -230,22 +232,44 @@ if uploaded_file:
                 continue
     
             media_vehicle = row["Variable Name"]  # Sheet name
-            
-            # ✅ Find closest index to current_spend
-            current_index = min(range(len(spend_values)), key=lambda i: abs(spend_values[i] - current_spend))
-
     
-            # Prepare data for this channel
+            # Prepare base data
             data = {
                 "Spend": spend_values,
                 "Execution": executions_curve,
                 "Revenue": incremental_values,
                 "ROAS": roas_values,
                 "Marginal ROAS": marginal_roas_values,
-                "Current": [current_inc_val if i == current_index else "" for i in range(len(spend_values))]
+                "Current": ["" for _ in range(len(spend_values))]
             }
-    
             df = pd.DataFrame(data)
+    
+            # Check if current_spend matches exactly
+            if current_spend in spend_values:
+                current_index = spend_values.index(current_spend)
+                df.loc[current_index, "Current"] = current_inc_val
+            else:
+                # Find lower and upper bounds
+                lower_idx = max(i for i, v in enumerate(spend_values) if v < current_spend)
+                upper_idx = min(i for i, v in enumerate(spend_values) if v > current_spend)
+    
+                # Interpolate values
+                current_row = {
+                    "Spend": current_spend,
+                    "Execution": interpolate(current_spend, spend_values[lower_idx], spend_values[upper_idx],
+                                             executions_curve[lower_idx], executions_curve[upper_idx]),
+                    "Revenue": interpolate(current_spend, spend_values[lower_idx], spend_values[upper_idx],
+                                           incremental_values[lower_idx], incremental_values[upper_idx]),
+                    "ROAS": interpolate(current_spend, spend_values[lower_idx], spend_values[upper_idx],
+                                        roas_values[lower_idx], roas_values[upper_idx]),
+                    "Marginal ROAS": interpolate(current_spend, spend_values[lower_idx], spend_values[upper_idx],
+                                                 marginal_roas_values[lower_idx], marginal_roas_values[upper_idx]),
+                    "Current": current_inc_val
+                }
+    
+                # Insert row at correct position
+                insert_pos = upper_idx
+                df = pd.concat([df.iloc[:insert_pos], pd.DataFrame([current_row]), df.iloc[insert_pos:]], ignore_index=True)
     
             # Write to Excel sheet
             df.to_excel(writer, sheet_name=media_vehicle, index=False)
