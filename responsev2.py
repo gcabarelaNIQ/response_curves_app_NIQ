@@ -155,8 +155,8 @@ if uploaded_file:
                                                 coef, half_life, steepness, saturation, max_adstock)
         current_roas = current_inc_val / current_spend if current_spend > 0 else 0
 
-        curve_points = 180
-        executions_curve = np.linspace(0.2 * current_execution, 1.8 * current_execution, curve_points)
+        curve_points = 200
+        executions_curve = np.linspace(0.2 * current_execution, 2 * current_execution, curve_points)
         incremental_values, spend_values, roas_values, marginal_roas_values = [], [], [], []
 
         prev_val, prev_spend = 0, 0
