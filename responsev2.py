@@ -9,8 +9,8 @@ from io import BytesIO
 from datetime import datetime
 
 # === Streamlit Config ===
-st.set_page_config(page_title="Response Curve Generator 2.0", layout="wide")
-st.title("📈 Response Curve Generator 2.0")
+st.set_page_config(page_title="Response Curve Generator", layout="wide")
+st.title("📈 Response Curve Generator")
 
 # === Instruction Message ===
 st.markdown("""
