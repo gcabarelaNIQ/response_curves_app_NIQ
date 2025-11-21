@@ -117,7 +117,7 @@ if uploaded_file:
         return adstocked
 
     def sigmoid_saturation(adstocked, steepness, saturation, max_adstock):
-    return (max_adstock / (1 + np.exp(-10 * steepness / max_adstock * (adstocked - saturation * max_adstock)))) -(max_adstock / (1 + np.exp(-10 * steepness / max_adstock * (0 - saturation * max_adstock))))
+        return (max_adstock / (1 + np.exp(-10 * steepness / max_adstock * (adstocked - saturation * max_adstock)))) -(max_adstock / (1 + np.exp(-10 * steepness / max_adstock * (0 - saturation * max_adstock))))
 
 
     def calculate_incremental(executions, base_vol_weeks, weekly_price, coef, half_life, steepness, saturation, max_adstock):
