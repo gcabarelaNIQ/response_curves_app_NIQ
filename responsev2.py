@@ -157,7 +157,7 @@ if uploaded_file:
         current_roas = current_inc_val / current_spend if current_spend > 0 else 0
 
         curve_points = 200
-        executions_curve = np.linspace(0.2 * current_execution, 2.2 * current_execution, curve_points)
+        executions_curve = np.linspace(0, 2 * current_execution, curve_points)
         incremental_values, spend_values, roas_values, marginal_roas_values = [], [], [], []
 
         prev_val, prev_spend = 0, 0
@@ -185,7 +185,7 @@ if uploaded_file:
             title=f"{media_vehicle}: Execution vs Incremental Sales Value",
             xaxis=dict(
                 title="Execution",
-                range=[0.2 * current_execution, 1.8 * current_execution]  # ✅ Align with executions_curve
+                range=[0.1 * current_execution, 1.8 * current_execution]  # ✅ Align with executions_curve
             ),
             yaxis=dict(title="Incremental Sales (Value)"),
             legend=dict(orientation="h", yanchor="bottom", y=-0.3, xanchor="center", x=0.5),
@@ -209,7 +209,7 @@ if uploaded_file:
         # Layout
         fig2.update_layout(
             title=f"{media_vehicle}: Spend vs Incremental Sales with ROAS and Marginal ROAS",
-            xaxis=dict(title="Spend", range=[0.2 * current_spend, 1.8 * current_spend]),
+            xaxis=dict(title="Spend", range=[0.1 * current_spend, 1.8 * current_spend]),
             yaxis=dict(title="Incremental Sales (Value)"),
             yaxis2=dict(title="ROAS / Marginal ROAS", overlaying='y', side='right'),
             legend=dict(orientation="h", yanchor="bottom", y=-0.3, xanchor="center", x=0.5),
