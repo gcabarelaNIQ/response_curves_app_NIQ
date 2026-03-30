@@ -254,31 +254,39 @@ def plot_response_curves(
     st.plotly_chart(fig1, use_container_width=True)
 
     # === Plot 2 (IDENTICAL STYLE) ===
-    # --- Plot 2 (SPEND) ---
     fig2 = go.Figure()
     fig2.add_trace(go.Scatter(
-        x=spend_values, y=incremental_values,
-        mode='lines', name='Incremental Sales Value'
+        x=spend_vals, y=inc_vals,
+        mode='lines',
+        name='Incremental Sales Value'
     ))
     fig2.add_trace(go.Scatter(
-        x=spend_values, y=roas_values,
-        mode='lines', name='ROAS',
-        yaxis='y2', line=dict(color='green')
+        x=spend_vals, y=roas_vals,
+        mode='lines',
+        yaxis='y2',
+        line=dict(color='green'),
+        name='ROAS'
     ))
     fig2.add_trace(go.Scatter(
-        x=spend_values, y=marginal_roas_values,
-        mode='lines', name='Marginal ROAS',
-        yaxis='y2', line=dict(color='orange', dash='dot')
+        x=spend_vals, y=mroas_vals,
+        mode='lines',
+        yaxis='y2',
+        line=dict(color='orange', dash='dot'),
+        name='Marginal ROAS'
     ))
     fig2.add_trace(go.Scatter(
-        x=[current_spend], y=[current_inc_val],
-        mode='markers+text', text=["Current Sales"],
+        x=[current_spend], y=[current_inc],
+        mode='markers+text',
+        name='Current Spend',
+        text=["Current Sales"],
         textposition="top center",
         marker=dict(color='blue', size=10)
     ))
     fig2.add_trace(go.Scatter(
         x=[current_spend], y=[current_roas],
-        mode='markers+text', text=["Current ROAS"],
+        mode='markers+text',
+        name='Current ROAS',
+        text=["Current ROAS"],
         textposition="bottom center",
         marker=dict(color='green', size=10),
         yaxis='y2'
@@ -292,11 +300,15 @@ def plot_response_curves(
         yaxis=dict(title="Incremental Sales (Value)"),
         yaxis2=dict(
             title="ROAS / Marginal ROAS",
-            overlaying='y', side='right'
+            overlaying='y',
+            side='right'
         ),
         legend=dict(
-            orientation="h", yanchor="bottom",
-            y=-0.3, xanchor="center", x=0.5
+            orientation="h",
+            yanchor="bottom",
+            y=-0.3,
+            xanchor="center",
+            x=0.5
         ),
         margin=dict(t=80, b=100)
     )
