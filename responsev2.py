@@ -230,6 +230,7 @@ def plot_response_curves(
     fig1.add_trace(go.Scatter(
         x=[current_execution], y=[current_inc],
         mode='markers+text',
+        name='Current Execution',
         text=["Current"],
         textposition="top center",
         marker=dict(color='red', size=10)
@@ -276,6 +277,7 @@ def plot_response_curves(
     fig2.add_trace(go.Scatter(
         x=[current_spend], y=[current_inc],
         mode='markers+text',
+        name='Current Spend',
         text=["Current Sales"],
         textposition="top center",
         marker=dict(color='blue', size=10)
@@ -283,6 +285,7 @@ def plot_response_curves(
     fig2.add_trace(go.Scatter(
         x=[current_spend], y=[current_roas],
         mode='markers+text',
+        name='Current ROAS',
         text=["Current ROAS"],
         textposition="bottom center",
         marker=dict(color='green', size=10),
