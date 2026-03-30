@@ -2,22 +2,19 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
-import plotly.io as pio
 import re
-import io
 from datetime import datetime
 
 # === Streamlit Config ===
 st.set_page_config(page_title="Response Curve Generator", layout="wide")
 st.title("📈 Response Curve Generator")
 
-# === MODE TOGGLE (PRO UX) ===
-
-st.markdown("## Switch Analysis Mode 🔁")
-st.caption("Change between model‑fitted response curves and manual simulations of adstocked-saturated executions")
+# === MODE TOGGLE ===
+st.markdown("## 🔁 Switch Analysis Mode")
+st.caption("Change between model‑fitted response curves and manual simulations of adstocked–saturated executions")
 
 simulate_mode = st.toggle(
-    "Simulate Curve with Custom Half-Life, Steepness, and Saturation Parameters",
+    "Simulate Curve with Custom Half‑Life, Steepness, and Saturation Parameters",
     value=False
 )
 
@@ -27,20 +24,19 @@ mode = (
     else "Current Response Curves"
 )
 
-# === Instruction Message ===
+# === Instructions ===
 st.markdown("""
 **⚠️ Important:**  
-Make sure to upload the **COE file exactly as you received it**, and confirm that the following sheets exist with these exact names:  
-- `Decomps Vol`  
-- `Decomps Value`  
-- `Media KeyMetrics`  
-- `Media Spends`  
-- `Model Result`  
-- `Predictors Summary`  
+Upload the **COE file exactly as received**, containing:
+- `Decomps Vol`
+- `Decomps Value`
+- `Media KeyMetrics`
+- `Media Spends`
+- `Model Result`
+- `Predictors Summary`
 """)
 
-uploaded_file = st.file_uploader("Upload your MMM Results Excel file", type=["xlsx"])
-
+uploaded_file = st.file_uploader("Upload MMM Results Excel file", type=["xlsx"])
 if not uploaded_file:
     st.info("⬆️ Upload a MMM results file to get started.")
     st.stop()
@@ -65,7 +61,7 @@ model_result.columns = ["Variable Name", "Raw Name"]
 model_coeffs = xls.parse("Predictors Summary", header=None, skiprows=1).iloc[:, [1, 3]]
 model_coeffs.columns = ["Raw Name", "Coefficient"]
 
-# Dates
+# === Dates & base ===
 decomps_vol["EndPeriod"] = pd.to_datetime(decomps_vol["EndPeriod"])
 media_metrics["EndPeriod"] = pd.to_datetime(media_metrics["EndPeriod"])
 media_spends["EndPeriod"] = pd.to_datetime(media_spends["EndPeriod"])
@@ -80,7 +76,7 @@ media_channels = [
     if c not in ["EndPeriod", "custom_period", "Unnamed: 0"]
 ]
 
-# === Extract params (UNCHANGED) ===
+# === Parameter extraction ===
 def extract_params(raw):
     if pd.isna(raw):
         return None, None, None
@@ -103,7 +99,7 @@ params_df = (
     .query("`Variable Name` in @media_channels")
 )
 
-# === FUNCTIONS (UNCHANGED) ===
+# === Maths (unchanged) ===
 def geometric_adstock(x, half_life):
     decay = 0.5 ** (1 / half_life)
     ad = np.zeros_like(x)
@@ -122,12 +118,12 @@ def sigmoid_saturation(ad, stp, sat, max_ad):
 def calculate_incremental(exec_w, base_vol, price, coef, hl, stp, sat, max_ad):
     ad = geometric_adstock(exec_w, hl)
     sat_ad = sigmoid_saturation(ad, stp, sat, max_ad)
-    return sum(
-        (np.exp(coef * sat_ad[i]) - 1) * base_vol[i] * price[i]
-        for i in range(len(exec_w))
-    )
+    total = 0
+    for i in range(len(exec_w)):
+        total += (np.exp(coef * sat_ad[i]) - 1) * base_vol[i] * price[i]
+    return total
 
-# === OPTIONS ===
+# === Options ===
 st.subheader("Options")
 
 if mode == "Current Response Curves":
@@ -145,7 +141,6 @@ else:
 start_date = st.date_input("Start Date", min_date)
 end_date = st.date_input("End Date", max_date)
 
-# === Filter data ===
 mm_f = media_metrics[
     (media_metrics["EndPeriod"] >= pd.to_datetime(start_date)) &
     (media_metrics["EndPeriod"] <= pd.to_datetime(end_date))
@@ -177,7 +172,7 @@ if mode == "Simulate Curve with Custom Half-Life, Steepness, and Saturation Para
 # === PREVIEW ===
 st.subheader("Preview")
 
-# === SHARED PLOTTING LOGIC WITH ORIGINAL STYLE ===
+# === Plotting function with return switch ===
 def plot_response_curves(
     media_vehicle,
     execution_weeks,
@@ -186,7 +181,8 @@ def plot_response_curves(
     coef,
     half_life,
     steepness,
-    saturation
+    saturation,
+    return_figs=False
 ):
     ad_real = geometric_adstock(execution_weeks, half_life)
     max_ad = np.max(ad_real)
@@ -197,123 +193,60 @@ def plot_response_curves(
     )
     current_roas = current_inc / current_spend if current_spend > 0 else 0
 
-    executions_curve = np.linspace(0, 2 * current_execution, 200)
+    x = np.linspace(0, 2 * current_execution, 200)
 
     inc_vals, spend_vals, roas_vals, mroas_vals = [], [], [], []
     pv, ps = 0, 0
-    for ex in executions_curve:
+    for ex in x:
         r = ex / current_execution if current_execution > 0 else 0
         inc = calculate_incremental(
-            execution_weeks * r,
-            base_vol_weeks,
-            weekly_price,
-            coef,
-            half_life,
-            steepness,
-            saturation,
-            max_ad
+            execution_weeks * r, base_vol_weeks, weekly_price,
+            coef, half_life, steepness, saturation, max_ad
         )
         sp = current_spend * r
-
         inc_vals.append(inc)
         spend_vals.append(sp)
         roas_vals.append(inc / sp if sp > 0 else 0)
         mroas_vals.append((inc - pv) / (sp - ps) if sp > ps else 0)
         pv, ps = inc, sp
 
-    # === Plot 1 (IDENTICAL STYLE) ===
-    fig1 = go.Figure()
-    fig1.add_trace(go.Scatter(
-        x=executions_curve,
-        y=inc_vals,
-        mode='lines',
-        name='Incremental Sales Value'
-    ))
-    fig1.add_trace(go.Scatter(
+    # Execution plot
+    fig_exec = go.Figure()
+    fig_exec.add_trace(go.Scatter(x=x, y=inc_vals, mode='lines'))
+    fig_exec.add_trace(go.Scatter(
         x=[current_execution], y=[current_inc],
-        mode='markers+text',
-        text=["Current"],
+        mode='markers+text', text=["Current"],
         textposition="top center",
         marker=dict(color='red', size=10)
     ))
-    fig1.update_layout(
-        title=f"{media_vehicle}: Execution vs Incremental Sales Value",
-        xaxis=dict(
-            title="Execution",
-            range=[0.1 * current_execution, 1.8 * current_execution]
-        ),
-        yaxis=dict(title="Incremental Sales (Value)"),
-        legend=dict(
-            orientation="h",
-            yanchor="bottom",
-            y=-0.3,
-            xanchor="center",
-            x=0.5
-        ),
-        margin=dict(t=80, b=100)
+    fig_exec.update_layout(
+        title=f"{media_vehicle}: Execution vs Incremental Sales Value"
     )
-    st.plotly_chart(fig1, use_container_width=True)
 
-    # === Plot 2 (IDENTICAL STYLE) ===
-    fig2 = go.Figure()
-    fig2.add_trace(go.Scatter(
-        x=spend_vals, y=inc_vals,
-        mode='lines',
-        name='Incremental Sales Value'
-    ))
-    fig2.add_trace(go.Scatter(
-        x=spend_vals, y=roas_vals,
-        mode='lines',
-        yaxis='y2',
-        line=dict(color='green'),
-        name='ROAS'
-    ))
-    fig2.add_trace(go.Scatter(
-        x=spend_vals, y=mroas_vals,
-        mode='lines',
-        yaxis='y2',
-        line=dict(color='orange', dash='dot'),
-        name='Marginal ROAS'
-    ))
-    fig2.add_trace(go.Scatter(
+    # Spend plot
+    fig_spend = go.Figure()
+    fig_spend.add_trace(go.Scatter(x=spend_vals, y=inc_vals, mode='lines'))
+    fig_spend.add_trace(go.Scatter(x=spend_vals, y=roas_vals, yaxis='y2', mode='lines'))
+    fig_spend.add_trace(go.Scatter(x=spend_vals, y=mroas_vals, yaxis='y2', mode='lines'))
+    fig_spend.add_trace(go.Scatter(
         x=[current_spend], y=[current_inc],
-        mode='markers+text',
-        text=["Current Sales"],
-        textposition="top center",
-        marker=dict(color='blue', size=10)
+        mode='markers', marker=dict(color='blue', size=10)
     ))
-    fig2.add_trace(go.Scatter(
+    fig_spend.add_trace(go.Scatter(
         x=[current_spend], y=[current_roas],
-        mode='markers+text',
-        text=["Current ROAS"],
-        textposition="bottom center",
-        marker=dict(color='green', size=10),
-        yaxis='y2'
+        mode='markers', yaxis='y2', marker=dict(color='green', size=10)
     ))
-    fig2.update_layout(
-        title=f"{media_vehicle}: Spend vs Incremental Sales with ROAS and Marginal ROAS",
-        xaxis=dict(
-            title="Spend",
-            range=[0.1 * current_spend, 1.8 * current_spend]
-        ),
-        yaxis=dict(title="Incremental Sales (Value)"),
-        yaxis2=dict(
-            title="ROAS / Marginal ROAS",
-            overlaying='y',
-            side='right'
-        ),
-        legend=dict(
-            orientation="h",
-            yanchor="bottom",
-            y=-0.3,
-            xanchor="center",
-            x=0.5
-        ),
-        margin=dict(t=80, b=100)
+    fig_spend.update_layout(
+        title=f"{media_vehicle}: Spend vs Incremental Sales with ROAS"
     )
-    st.plotly_chart(fig2, use_container_width=True)
 
-# === EXECUTION ===
+    if return_figs:
+        return fig_exec, fig_spend
+
+    st.plotly_chart(fig_exec, use_container_width=True)
+    st.plotly_chart(fig_spend, use_container_width=True)
+
+# === Execution by mode ===
 if mode == "Current Response Curves":
     for _, row in params_df.iterrows():
         if row["Variable Name"] not in selected_channels:
@@ -333,7 +266,6 @@ if mode == "Current Response Curves":
             row["Saturation"]
         )
 
-
 else:
     row = params_df[params_df["Variable Name"] == sim_channel].iloc[0]
     exec_w = mm_f[sim_channel].fillna(0).values
@@ -346,11 +278,12 @@ else:
         row["Coefficient"],
         sim_hl,
         sim_stp,
-        sim_sat
+        sim_sat,
+        return_figs=True
     )
 
-    # ✅ Spend curve FIRST
+    # ✅ Spend FIRST
     st.plotly_chart(fig_spend, use_container_width=True)
 
-    # ✅ Execution curve SECOND
+    # ✅ Execution SECOND
     st.plotly_chart(fig_exec, use_container_width=True)
