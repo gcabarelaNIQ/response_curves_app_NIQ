@@ -14,14 +14,25 @@ st.title("📈 Response Curve Generator")
 # === MODE TOGGLE (PRO UX) ===
 
 
-st.markdown("## 🔁 Analysis Mode")
-st.caption("Switch between model-fitted response curves and custom parameter simulations")
+st.markdown("""
+<style>
+/* Increase label font size */
+div[data-testid="stToggle"] label {
+    font-size: 1.2rem;
+}
+
+/* Optional: make switch slightly larger */
+div[data-testid="stToggle"] {
+    transform: scale(1.15);
+    transform-origin: left center;
+}
+</style>
+""", unsafe_allow_html=True)
 
 simulate_mode = st.toggle(
-    "Simulate Curve with Custom Parameters",
+    "Simulate Curve with Custom Half-Life, Steppness, and Saturation Parameters",
     value=False
 )
-
 
 mode = (
     "Simulate Curve with Custom Parameters"
