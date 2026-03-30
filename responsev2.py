@@ -48,7 +48,7 @@ if uploaded_file:
     media_spends = xls.parse("Media Spends")
     model_result = xls.parse("Model Result", header=None, skiprows=1).iloc[:, [2, 3]]
     model_result.columns = ["Variable Name", "Raw Name"]
-    model_coeffs = xls.parse("Predictors Summary", header=None, skiprows=1).iloc[:, [1, 2]]
+    model_coeffs = xls.parse("Predictors Summary", header=None, skiprows=1).iloc[:, [1, 3]]
     model_coeffs.columns = ["Raw Name", "Coefficient"]
 
     # Merge decompositions
