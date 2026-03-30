@@ -123,19 +123,22 @@ def calculate_incremental(exec_w, base_vol, price, coef, hl, stp, sat, max_ad):
 # ================================
 # === OPTIONS UI
 # ================================
-st.subheader("Options")
 
-if mode == "Current Response Curves":
-    selected_channels = st.multiselect(
-        "Select channels",
-        options=params_df["Variable Name"].tolist(),
-        default=params_df["Variable Name"].tolist()
-    )
-else:
-    sim_channel = st.selectbox(
-        "Media vehicle",
-        params_df["Variable Name"].tolist()
-    )
+if uploaded_file:
+    st.subheader("Options")
+
+    if mode == "Current Response Curves":
+        selected_channels = st.multiselect(
+            "Select channels",
+            options=params_df["Variable Name"].tolist(),
+            default=params_df["Variable Name"].tolist()
+        )
+    else:
+        sim_channel = st.selectbox(
+            "Media vehicle",
+            params_df["Variable Name"].tolist()
+        )
+
 
 start_date = st.date_input("Start Date", min_date, min_value=min_date, max_value=max_date)
 end_date = st.date_input("End Date", max_date, min_value=min_date, max_value=max_date)
@@ -182,6 +185,12 @@ for ch in channels_to_plot:
     hl = row["Half-life"] if mode == "Current Response Curves" else half_life
     stp = row["Steepness"] if mode == "Current Response Curves" else steepness
     sat = row["Saturation"] if mode == "Current Response Curves" else saturation
+    
+    if (
+        pd.isna(hl) or pd.isna(stp) or pd.isna(sat)
+        or hl <= 0 or stp <= 0 or sat <= 0
+    ):
+        continue
 
     exec_w = mm_f[ch].fillna(0).values
     curr_exec = np.sum(exec_w)
