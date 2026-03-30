@@ -8,28 +8,27 @@ import io
 from io import BytesIO
 from datetime import datetime
 
-    # Functions
-    def geometric_adstock(x, half_life):
-        decay = 0.5 ** (1 / half_life)
-        adstocked = np.zeros_like(x)
-        adstocked[0] = x[0]
-        for t in range(1, len(x)):
-            adstocked[t] = x[t] + decay * adstocked[t - 1]
-        return adstocked
+# Functions
+def geometric_adstock(x, half_life):
+    decay = 0.5 ** (1 / half_life)
+    adstocked = np.zeros_like(x)
+    adstocked[0] = x[0]
+    for t in range(1, len(x)):
+        adstocked[t] = x[t] + decay * adstocked[t - 1]
+    return adstocked
 
-    def sigmoid_saturation(adstocked, steepness, saturation, max_adstock):
-        return (max_adstock / (1 + np.exp(-10 * steepness / max_adstock * (adstocked - saturation * max_adstock)))) -(max_adstock / (1 + np.exp(-10 * steepness / max_adstock * (0 - saturation * max_adstock))))
+def sigmoid_saturation(adstocked, steepness, saturation, max_adstock):
+    return (max_adstock / (1 + np.exp(-10 * steepness / max_adstock * (adstocked - saturation * max_adstock)))) -(max_adstock / (1 + np.exp(-10 * steepness / max_adstock * (0 - saturation * max_adstock))))
 
-
-    def calculate_incremental(executions, base_vol_weeks, weekly_price, coef, half_life, steepness, saturation, max_adstock):
-        adstocked = geometric_adstock(executions, half_life)
-        saturated = sigmoid_saturation(adstocked, steepness, saturation, max_adstock)
-        incremental_val_total = 0
-        for i in range(len(executions)):
-            inc_vol_week = (np.exp(coef * saturated[i]) - 1) * base_vol_weeks[i]
-            inc_val_week = inc_vol_week * weekly_price[i]
-            incremental_val_total += inc_val_week
-        return incremental_val_total
+def calculate_incremental(executions, base_vol_weeks, weekly_price, coef, half_life, steepness, saturation, max_adstock):
+    adstocked = geometric_adstock(executions, half_life)
+    saturated = sigmoid_saturation(adstocked, steepness, saturation, max_adstock)
+    incremental_val_total = 0
+    for i in range(len(executions)):
+        inc_vol_week = (np.exp(coef * saturated[i]) - 1) * base_vol_weeks[i]
+        inc_val_week = inc_vol_week * weekly_price[i]
+        incremental_val_total += inc_val_week
+    return incremental_val_total
 
 # === Streamlit Config ===
 st.set_page_config(page_title="Response Curve Generator", layout="wide")
