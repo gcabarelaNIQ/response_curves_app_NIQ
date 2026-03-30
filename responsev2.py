@@ -202,7 +202,7 @@ fig.update_layout(
     xaxis=dict(
         title="Execution (relative)",
         showticklabels=False,
-        range=[0, x_max_focus]   # ✅ KEY FIX
+        range=[0, x_max_focus]
     ),
     yaxis=dict(
         title="Incremental Response (relative)",
@@ -211,6 +211,7 @@ fig.update_layout(
     showlegend=False,
     margin=dict(t=70, b=40)
 )
+
 
 st.plotly_chart(fig, use_container_width=True)
 st.divider()
