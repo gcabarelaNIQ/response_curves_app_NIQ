@@ -15,7 +15,7 @@ st.title("📈 Response Curve Generator")
 
 
 st.markdown("## Switch Analysis Mode 🔁")
-st.caption("Change between model‑fitted response curves and manual simulations of adstocked-saturated execution")
+st.caption("Change between model‑fitted response curves and manual simulations of adstocked-saturated executions")
 
 simulate_mode = st.toggle(
     "Simulate Curve with Custom Half-Life, Steepness, and Saturation Parameters",
