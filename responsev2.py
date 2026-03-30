@@ -155,32 +155,28 @@ for total_exec in execution_grid:
     )
 
     incremental_values.append(incremental_response)
+
 # ------------------
-# Auto-scale X-axis
+# Auto-scale X-axis (robust)
 # ------------------
 
 incremental_array = np.array(incremental_values)
 
-# --- find inflection region ---
-inflection_indices = []
+max_response = incremental_array.max()
 
-for i, total_exec in enumerate(execution_grid):
-    weekly_exec = np.zeros(total_weeks)
-    weekly_exec[:avg_weeks] = total_exec / avg_weeks
+# Find where response reaches meaningful curvature (e.g. 5%–95%)
+lower_idx = np.where(incremental_array >= 0.05 * max_response)[0]
+upper_idx = np.where(incremental_array >= 0.95 * max_response)[0]
 
-    adstocked = geometric_adstock(weekly_exec, half_life)
-    if np.mean(adstocked) >= saturation * np.max(adstocked):
-        inflection_indices.append(i)
-        break
-
-# --- define visual focus ---
-if inflection_indices:
-    inflection_exec = execution_grid[inflection_indices[0]]
-    x_max_focus = inflection_exec * 3   # show knee + saturation
+if len(lower_idx) > 0 and len(upper_idx) > 0:
+    x_start = execution_grid[lower_idx[0]]
+    x_end = execution_grid[upper_idx[0]]
+    x_max_focus = x_end * 1.3
 else:
     x_max_focus = execution_grid[-1]
 
-x_max_focus = min(x_max_focus, execution_grid[-1])
+# --- enforce minimum visible range ---
+x_max_focus = max(x_max_focus, execution_grid[len(execution_grid) // 10])
 
 # ------------------
 # Plot
@@ -212,11 +208,8 @@ fig.update_layout(
     margin=dict(t=70, b=40)
 )
 
-
 st.plotly_chart(fig, use_container_width=True)
 st.divider()
-
-
 
 # === Instruction Message ===
 st.markdown("""
