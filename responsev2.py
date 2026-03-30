@@ -156,27 +156,27 @@ for total_exec in execution_grid:
 
     incremental_values.append(incremental_response)
 
+
 # ------------------
-# Auto-scale X-axis (robust)
+# Normalise X-axis by saturation point
 # ------------------
 
 incremental_array = np.array(incremental_values)
-
 max_response = incremental_array.max()
 
-# Find where response reaches meaningful curvature (e.g. 5%–95%)
-lower_idx = np.where(incremental_array >= 0.05 * max_response)[0]
-upper_idx = np.where(incremental_array >= 0.95 * max_response)[0]
+# Find execution level at ~95% of max response (proxy for saturation)
+sat_idx = np.where(incremental_array >= 0.95 * max_response)[0]
 
-if len(lower_idx) > 0 and len(upper_idx) > 0:
-    x_start = execution_grid[lower_idx[0]]
-    x_end = execution_grid[upper_idx[0]]
-    x_max_focus = x_end * 1.3
+if len(sat_idx) > 0:
+    exec_at_saturation = execution_grid[sat_idx[0]]
 else:
-    x_max_focus = execution_grid[-1]
+    exec_at_saturation = execution_grid[-1]
 
-# --- enforce minimum visible range ---
-x_max_focus = max(x_max_focus, execution_grid[len(execution_grid) // 10])
+# Avoid division by zero
+exec_at_saturation = max(exec_at_saturation, 1e-6)
+
+# Normalised X (% of saturation)
+x_normalised = execution_grid / exec_at_saturation
 
 # ------------------
 # Plot
@@ -185,7 +185,7 @@ x_max_focus = max(x_max_focus, execution_grid[len(execution_grid) // 10])
 fig = go.Figure()
 fig.add_trace(
     go.Scatter(
-        x=execution_grid,
+        x=x_normalised,
         y=incremental_values,
         mode="lines",
         line=dict(width=3),
@@ -196,9 +196,9 @@ fig.add_trace(
 fig.update_layout(
     title="Response Curve Shape",
     xaxis=dict(
-        title="Execution (relative)",
+        title="Execution (% of saturation)",
         showticklabels=False,
-        range=[0, x_max_focus]
+        range=[0, 2.0]   # show up to 200% of saturation
     ),
     yaxis=dict(
         title="Incremental Response (relative)",
@@ -210,6 +210,7 @@ fig.update_layout(
 
 st.plotly_chart(fig, use_container_width=True)
 st.divider()
+
 
 # === Instruction Message ===
 st.markdown("""
