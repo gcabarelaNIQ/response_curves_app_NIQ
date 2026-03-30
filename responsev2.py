@@ -133,160 +133,156 @@ def calculate_incremental(exec_w, base_vol, price, coef, hl, stp, sat, max_ad):
 
 if uploaded_file:
     st.subheader("Options")
+    
+    ############################################
+    # ✅ ORIGINAL CODE — 100% UNCHANGED
+    ############################################
+    for idx, row in params_df.iterrows():
+        if row["Variable Name"] not in selected_channels:
+            continue
+        if any(pd.isna(row[col]) for col in ["Half-life", "Steepness", "Saturation", "Coefficient"]):
+            continue
 
-        if mode == "Current Response Curves":
-            
-       ############################################
-        # ✅ ORIGINAL CODE — 100% UNCHANGED
-        ############################################
-    
-        st.subheader("Preview")
-        for idx, row in params_df.iterrows():
-            if row["Variable Name"] not in selected_channels:
-                continue
-            if any(pd.isna(row[col]) for col in ["Half-life", "Steepness", "Saturation", "Coefficient"]):
-                continue
-    
-            media_vehicle = row["Variable Name"]
-            half_life = row["Half-life"]
-            steepness = row["Steepness"]
-            saturation = row["Saturation"]
-            coef = round(row["Coefficient"], 15)
-    
-            execution_weeks = media_metrics_filtered[media_vehicle].fillna(0).values
-            current_execution = np.sum(execution_weeks)
-            current_spend = media_spends_filtered[media_vehicle].sum()
-    
-            adstocked_real = geometric_adstock(execution_weeks, half_life)
-            max_adstock = np.max(adstocked_real)
-    
-            current_inc_val = calculate_incremental(
-                execution_weeks, base_vol_weeks, weekly_price,
+        media_vehicle = row["Variable Name"]
+        half_life = row["Half-life"]
+        steepness = row["Steepness"]
+        saturation = row["Saturation"]
+        coef = round(row["Coefficient"], 15)
+
+        execution_weeks = media_metrics_filtered[media_vehicle].fillna(0).values
+        current_execution = np.sum(execution_weeks)
+        current_spend = media_spends_filtered[media_vehicle].sum()
+
+        adstocked_real = geometric_adstock(execution_weeks, half_life)
+        max_adstock = np.max(adstocked_real)
+
+        current_inc_val = calculate_incremental(
+            execution_weeks, base_vol_weeks, weekly_price,
+            coef, half_life, steepness, saturation, max_adstock
+        )
+        current_roas = current_inc_val / current_spend if current_spend > 0 else 0
+
+        curve_points = 200
+        executions_curve = np.linspace(0, 2 * current_execution, curve_points)
+        incremental_values, spend_values, roas_values, marginal_roas_values = [], [], [], []
+
+        prev_val, prev_spend = 0, 0
+        for ex in executions_curve:
+            ratio = ex / current_execution if current_execution > 0 else 0
+            scaled_execution = execution_weeks * ratio
+
+            inc_val = calculate_incremental(
+                scaled_execution, base_vol_weeks, weekly_price,
                 coef, half_life, steepness, saturation, max_adstock
             )
-            current_roas = current_inc_val / current_spend if current_spend > 0 else 0
-    
-            curve_points = 200
-            executions_curve = np.linspace(0, 2 * current_execution, curve_points)
-            incremental_values, spend_values, roas_values, marginal_roas_values = [], [], [], []
-    
-            prev_val, prev_spend = 0, 0
-            for ex in executions_curve:
-                ratio = ex / current_execution if current_execution > 0 else 0
-                scaled_execution = execution_weeks * ratio
-    
-                inc_val = calculate_incremental(
-                    scaled_execution, base_vol_weeks, weekly_price,
-                    coef, half_life, steepness, saturation, max_adstock
-                )
-    
-                incremental_values.append(inc_val)
-                spend = current_spend * ratio
-                spend_values.append(spend)
-                roas_values.append(inc_val / spend if spend > 0 else 0)
-                marginal_roas_values.append(
-                    (inc_val - prev_val) / (spend - prev_spend) if spend > prev_spend else 0
-                )
-    
-                prev_val, prev_spend = inc_val, spend
-    
-            # === Plot 1 (UNCHANGED)
-            fig1 = go.Figure()
-            fig1.add_trace(go.Scatter(
-                x=executions_curve,
-                y=incremental_values,
-                mode='lines',
-                name='Incremental Sales Value'
-            ))
-            fig1.add_trace(go.Scatter(
-                x=[current_execution],
-                y=[current_inc_val],
-                mode='markers+text',
-                text=["Current"],
-                textposition="top center",
-                marker=dict(color='red', size=10),
-                name='Current Point'
-            ))
-            fig1.update_layout(
-                title=f"{media_vehicle}: Execution vs Incremental Sales Value",
-                xaxis=dict(
-                    title="Execution",
-                    range=[0.1 * current_execution, 1.8 * current_execution]
-                ),
-                yaxis=dict(title="Incremental Sales (Value)"),
-                legend=dict(
-                    orientation="h",
-                    yanchor="bottom",
-                    y=-0.3,
-                    xanchor="center",
-                    x=0.5
-                ),
-                margin=dict(t=80, b=100)
+
+            incremental_values.append(inc_val)
+            spend = current_spend * ratio
+            spend_values.append(spend)
+            roas_values.append(inc_val / spend if spend > 0 else 0)
+            marginal_roas_values.append(
+                (inc_val - prev_val) / (spend - prev_spend) if spend > prev_spend else 0
             )
-            st.plotly_chart(fig1, use_container_width=True)
-    
-            # === Plot 2 (UNCHANGED)
-            fig2 = go.Figure()
-            fig2.add_trace(go.Scatter(
-                x=spend_values,
-                y=incremental_values,
-                mode='lines',
-                name='Incremental Sales Value'
-            ))
-            fig2.add_trace(go.Scatter(
-                x=spend_values,
-                y=roas_values,
-                mode='lines',
-                name='ROAS',
-                yaxis='y2',
-                line=dict(color='green')
-            ))
-            fig2.add_trace(go.Scatter(
-                x=spend_values,
-                y=marginal_roas_values,
-                mode='lines',
-                name='Marginal ROAS',
-                yaxis='y2',
-                line=dict(color='orange', dash='dot')
-            ))
-            fig2.add_trace(go.Scatter(
-                x=[current_spend],
-                y=[current_inc_val],
-                mode='markers+text',
-                text=["Current Sales"],
-                textposition="top center",
-                marker=dict(color='blue', size=10),
-                name='Current Sales'
-            ))
-            fig2.add_trace(go.Scatter(
-                x=[current_spend],
-                y=[current_roas],
-                mode='markers+text',
-                text=["Current ROAS"],
-                textposition="bottom center",
-                marker=dict(color='green', size=10),
-                name='Current ROAS',
-                yaxis='y2'
-            ))
-            fig2.update_layout(
-                title=f"{media_vehicle}: Spend vs Incremental Sales with ROAS and Marginal ROAS",
-                xaxis=dict(title="Spend", range=[0.1 * current_spend, 1.8 * current_spend]),
-                yaxis=dict(title="Incremental Sales (Value)"),
-                yaxis2=dict(title="ROAS / Marginal ROAS", overlaying='y', side='right'),
-                legend=dict(
-                    orientation="h",
-                    yanchor="bottom",
-                    y=-0.3,
-                    xanchor="center",
-                    x=0.5
-                ),
-                margin=dict(t=80, b=100)
-            )
-            st.plotly_chart(fig2, use_container_width=True)
-    
-        ############################################
-        # ✅ END ORIGINAL CODE
-        ############################################
+
+            prev_val, prev_spend = inc_val, spend
+
+        # === Plot 1 (UNCHANGED)
+        fig1 = go.Figure()
+        fig1.add_trace(go.Scatter(
+            x=executions_curve,
+            y=incremental_values,
+            mode='lines',
+            name='Incremental Sales Value'
+        ))
+        fig1.add_trace(go.Scatter(
+            x=[current_execution],
+            y=[current_inc_val],
+            mode='markers+text',
+            text=["Current"],
+            textposition="top center",
+            marker=dict(color='red', size=10),
+            name='Current Point'
+        ))
+        fig1.update_layout(
+            title=f"{media_vehicle}: Execution vs Incremental Sales Value",
+            xaxis=dict(
+                title="Execution",
+                range=[0.1 * current_execution, 1.8 * current_execution]
+            ),
+            yaxis=dict(title="Incremental Sales (Value)"),
+            legend=dict(
+                orientation="h",
+                yanchor="bottom",
+                y=-0.3,
+                xanchor="center",
+                x=0.5
+            ),
+            margin=dict(t=80, b=100)
+        )
+        st.plotly_chart(fig1, use_container_width=True)
+
+        # === Plot 2 (UNCHANGED)
+        fig2 = go.Figure()
+        fig2.add_trace(go.Scatter(
+            x=spend_values,
+            y=incremental_values,
+            mode='lines',
+            name='Incremental Sales Value'
+        ))
+        fig2.add_trace(go.Scatter(
+            x=spend_values,
+            y=roas_values,
+            mode='lines',
+            name='ROAS',
+            yaxis='y2',
+            line=dict(color='green')
+        ))
+        fig2.add_trace(go.Scatter(
+            x=spend_values,
+            y=marginal_roas_values,
+            mode='lines',
+            name='Marginal ROAS',
+            yaxis='y2',
+            line=dict(color='orange', dash='dot')
+        ))
+        fig2.add_trace(go.Scatter(
+            x=[current_spend],
+            y=[current_inc_val],
+            mode='markers+text',
+            text=["Current Sales"],
+            textposition="top center",
+            marker=dict(color='blue', size=10),
+            name='Current Sales'
+        ))
+        fig2.add_trace(go.Scatter(
+            x=[current_spend],
+            y=[current_roas],
+            mode='markers+text',
+            text=["Current ROAS"],
+            textposition="bottom center",
+            marker=dict(color='green', size=10),
+            name='Current ROAS',
+            yaxis='y2'
+        ))
+        fig2.update_layout(
+            title=f"{media_vehicle}: Spend vs Incremental Sales with ROAS and Marginal ROAS",
+            xaxis=dict(title="Spend", range=[0.1 * current_spend, 1.8 * current_spend]),
+            yaxis=dict(title="Incremental Sales (Value)"),
+            yaxis2=dict(title="ROAS / Marginal ROAS", overlaying='y', side='right'),
+            legend=dict(
+                orientation="h",
+                yanchor="bottom",
+                y=-0.3,
+                xanchor="center",
+                x=0.5
+            ),
+            margin=dict(t=80, b=100)
+        )
+        st.plotly_chart(fig2, use_container_width=True)
+
+    ############################################
+    # ✅ END ORIGINAL CODE
+    ############################################
 
     else:
         sim_channel = st.selectbox(
