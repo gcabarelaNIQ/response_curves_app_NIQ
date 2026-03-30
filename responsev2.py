@@ -51,6 +51,10 @@ if uploaded_file:
     model_coeffs = xls.parse("Predictors Summary", header=None, skiprows=1).iloc[:, [1, 3]]
     model_coeffs.columns = ["Raw Name", "Coefficient"]
 
+    
+    min_date = decomps_vol["EndPeriod"].min().date()
+    max_date = decomps_vol["EndPeriod"].max().date()
+
     # Merge decompositions
     base_data = pd.merge(decomps_vol, decomps_val, on="EndPeriod")
 
@@ -92,8 +96,8 @@ if uploaded_file:
     # === UI Options ===
     st.subheader("Options")
     selected_channels = st.multiselect("Select channels to plot", options=params_df["Variable Name"].tolist(), default=params_df["Variable Name"].tolist())
-    start_date = st.date_input("Start Date", datetime(2023, 1, 8))
-    end_date = st.date_input("End Date", datetime(2024, 12, 29))
+    start_date = st.date_input("Start Date", min_date)
+    end_date = st.date_input("End Date", max_date)
 
     # Filter by date
     for df in [media_metrics, media_spends, base_data]:
