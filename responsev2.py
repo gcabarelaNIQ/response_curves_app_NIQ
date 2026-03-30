@@ -151,18 +151,19 @@ for total_exec in execution_grid:
     )
 
     incremental_response = np.sum(
-        (np.exp(coef * saturated) - 1) * base_volume
+    (np.exp(coef * saturated) - 1) * base_volume
     )
-
     incremental_values.append(incremental_response)
 
+incremental_array = np.array(incremental_values)
+max_response = incremental_array.max()
+
+# Normalise response for visualisation only
+incremental_values_norm = incremental_array / max_response
 
 # ------------------
 # Normalise X-axis by saturation point
 # ------------------
-
-incremental_array = np.array(incremental_values)
-max_response = incremental_array.max()
 
 # Find execution level at ~95% of max response (proxy for saturation)
 sat_idx = np.where(incremental_array >= 0.95 * max_response)[0]
@@ -186,7 +187,7 @@ fig = go.Figure()
 fig.add_trace(
     go.Scatter(
         x=x_normalised,
-        y=incremental_values,
+        y=incremental_values_norm,
         mode="lines",
         line=dict(width=3),
         name="Response Curve"
