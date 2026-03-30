@@ -333,11 +333,12 @@ if mode == "Current Response Curves":
             row["Saturation"]
         )
 
+
 else:
     row = params_df[params_df["Variable Name"] == sim_channel].iloc[0]
     exec_w = mm_f[sim_channel].fillna(0).values
 
-    fig1, fig2 = plot_response_curves(
+    fig_exec, fig_spend = plot_response_curves(
         sim_channel,
         exec_w,
         exec_w.sum(),
@@ -348,8 +349,8 @@ else:
         sim_sat
     )
 
-    # ✅ Plot 2 FIRST (Spend curve)
-    st.plotly_chart(fig2, use_container_width=True)
+    # ✅ Spend curve FIRST
+    st.plotly_chart(fig_spend, use_container_width=True)
 
-    # ✅ Plot 1 SECOND (Execution curve)
-    st.plotly_chart(fig1, use_container_width=True)
+    # ✅ Execution curve SECOND
+    st.plotly_chart(fig_exec, use_container_width=True)
