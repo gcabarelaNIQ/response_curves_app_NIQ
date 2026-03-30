@@ -221,6 +221,8 @@ if uploaded_file:
     
     def interpolate(x, x0, x1, y0, y1):
         return y0 + (y1 - y0) * ((x - x0) / (x1 - x0))
+
+    excel_file = "response_curves.xlsx"
     
     with pd.ExcelWriter(excel_file, engine="openpyxl") as writer:
         for idx, row in params_df.iterrows():
