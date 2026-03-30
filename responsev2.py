@@ -160,15 +160,27 @@ for total_exec in execution_grid:
 # ------------------
 
 incremental_array = np.array(incremental_values)
-max_response = incremental_array.max()
 
-# Focus on the region where the curve matters (e.g. up to 99% of max)
-focus_idx = np.where(incremental_array >= 0.99 * max_response)[0]
+# --- find inflection region ---
+inflection_indices = []
 
-if len(focus_idx) > 0:
-    x_max_focus = execution_grid[focus_idx[0]] * 1.1
+for i, total_exec in enumerate(execution_grid):
+    weekly_exec = np.zeros(total_weeks)
+    weekly_exec[:avg_weeks] = total_exec / avg_weeks
+
+    adstocked = geometric_adstock(weekly_exec, half_life)
+    if np.mean(adstocked) >= saturation * np.max(adstocked):
+        inflection_indices.append(i)
+        break
+
+# --- define visual focus ---
+if inflection_indices:
+    inflection_exec = execution_grid[inflection_indices[0]]
+    x_max_focus = inflection_exec * 3   # show knee + saturation
 else:
     x_max_focus = execution_grid[-1]
+
+x_max_focus = min(x_max_focus, execution_grid[-1])
 
 # ------------------
 # Plot
