@@ -21,7 +21,7 @@ Make sure to upload the **COE file exactly as you received it**, and confirm tha
 - `Media KeyMetrics`  
 - `Media Spends`  
 - `Model Result`  
-- `Model Coefficients`  
+- `Predictors Summary`  
 """)
 
 # Status placeholder
@@ -36,7 +36,7 @@ if uploaded_file:
     xls = pd.ExcelFile(uploaded_file, engine='openpyxl')
 
     # Validate required sheets
-    required_sheets = ["Decomps Vol", "Decomps Value", "Media KeyMetrics", "Media Spends", "Model Result", "Model Coefficients"]
+    required_sheets = ["Decomps Vol", "Decomps Value", "Media KeyMetrics", "Media Spends", "Model Result", "Predictors Summary"]
     if not all(sheet in xls.sheet_names for sheet in required_sheets):
         status.error("❌ Missing required sheets. Please upload the correct COE file.")
         st.stop()
@@ -48,7 +48,7 @@ if uploaded_file:
     media_spends = xls.parse("Media Spends")
     model_result = xls.parse("Model Result", header=None, skiprows=1).iloc[:, [2, 3]]
     model_result.columns = ["Variable Name", "Raw Name"]
-    model_coeffs = xls.parse("Model Coefficients", header=None, skiprows=1).iloc[:, [1, 2]]
+    model_coeffs = xls.parse("Predictors Summary", header=None, skiprows=1).iloc[:, [1, 2]]
     model_coeffs.columns = ["Raw Name", "Coefficient"]
 
     # Merge decompositions
