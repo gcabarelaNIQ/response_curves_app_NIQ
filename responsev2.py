@@ -12,15 +12,15 @@ st.set_page_config(page_title="Response Curve Generator", layout="wide")
 st.title("📈 Response Curve Generator")
 
 # === MODE TOGGLE (PRO UX) ===
-_, mode_col = st.columns([3, 2])
-with mode_col:
-    simulate_mode = st.toggle(
-        "Simulate Curve with Custom Parameters",
-        value=False
-    )
+st.markdown("## 🔁 Analysis Mode")
+st.caption("Switch between model-fitted response curves and custom adstocked-saturated executions")
 
+simulate_mode = st.toggle(
+    "Simulate Curve with Custom Half-Life, Steepness, and Saturation Parameters",
+    value=False
+)
 mode = (
-    "Simulate Curve with Custom Parameters"
+    "Simulate Curve with Custom Half-Life, Steepness, and Saturation Parameters"
     if simulate_mode
     else "Current Response Curves"
 )
@@ -162,7 +162,7 @@ base_val_weeks = bd_f["final_0_val"].values
 weekly_price = base_val_weeks / base_vol_weeks
 
 # === Simulation sliders ===
-if mode == "Simulate Curve with Custom Parameters":
+if mode == "Simulate Curve with Custom Half-Life, Steepness, and Saturation Parameters":
     st.subheader("Simulation parameters")
     c1, c2, c3 = st.columns(3)
     with c1:
