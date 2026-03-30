@@ -155,6 +155,20 @@ for total_exec in execution_grid:
     )
 
     incremental_values.append(incremental_response)
+# ------------------
+# Auto-scale X-axis
+# ------------------
+
+incremental_array = np.array(incremental_values)
+max_response = incremental_array.max()
+
+# Focus on the region where the curve matters (e.g. up to 99% of max)
+focus_idx = np.where(incremental_array >= 0.99 * max_response)[0]
+
+if len(focus_idx) > 0:
+    x_max_focus = execution_grid[focus_idx[0]] * 1.1
+else:
+    x_max_focus = execution_grid[-1]
 
 # ------------------
 # Plot
@@ -175,7 +189,8 @@ fig.update_layout(
     title="Response Curve Shape",
     xaxis=dict(
         title="Execution (relative)",
-        showticklabels=False
+        showticklabels=False,
+        range=[0, x_max_focus]   # ✅ KEY FIX
     ),
     yaxis=dict(
         title="Incremental Response (relative)",
@@ -186,8 +201,10 @@ fig.update_layout(
 )
 
 st.plotly_chart(fig, use_container_width=True)
-
 st.divider()
+
+
+
 # === Instruction Message ===
 st.markdown("""
 **⚠️ Important:**  
