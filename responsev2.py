@@ -37,6 +37,13 @@ Upload the **COE file exactly as received**, containing:
 status = st.empty()
 uploaded_file = st.file_uploader("Upload MMM Results Excel file", type=["xlsx"])
 
+
+# --- Guard clause
+if not uploaded_file:
+    st.info("⬆️ Upload a MMM results file to get started.")
+    st.stop()
+
+
 # ================================
 # === LOAD + PREP DATA
 # ================================
