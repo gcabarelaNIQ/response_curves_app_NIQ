@@ -223,73 +223,73 @@ if uploaded_file:
         return y0 + (y1 - y0) * ((x - x0) / (x1 - x0))
     
     with pd.ExcelWriter(excel_file, engine="openpyxl") as writer:
-    for idx, row in params_df.iterrows():
-        if row["Variable Name"] not in selected_channels:
-            continue
-        if any(pd.isna(row[col]) for col in ["Half-life", "Steepness", "Saturation", "Coefficient"]):
-            continue
-
-        media_vehicle = row["Variable Name"]
-
-        half_life = row["Half-life"]
-        steepness = row["Steepness"]
-        saturation = row["Saturation"]
-        coef = row["Coefficient"]
-
-        # 🔁 RECOMPUTE PER CHANNEL
-        execution_weeks = media_metrics_filtered[media_vehicle].fillna(0).values
-        current_execution = np.sum(execution_weeks)
-        current_spend = media_spends_filtered[media_vehicle].sum()
-
-        adstocked_real = geometric_adstock(execution_weeks, half_life)
-        max_adstock = np.max(adstocked_real)
-
-        current_inc_val = calculate_incremental(
-            execution_weeks, base_vol_weeks, weekly_price,
-            coef, half_life, steepness, saturation, max_adstock
-        )
-
-        curve_points = 200
-        executions_curve = np.linspace(0, 2 * current_execution, curve_points)
-
-        incremental_values, spend_values, roas_values, marginal_roas_values = [], [], [], []
-
-        prev_val, prev_spend = 0, 0
-        for ex in executions_curve:
-            ratio = ex / current_execution if current_execution > 0 else 0
-            scaled_execution = execution_weeks * ratio
-
-            inc_val = calculate_incremental(
-                scaled_execution, base_vol_weeks, weekly_price,
+        for idx, row in params_df.iterrows():
+            if row["Variable Name"] not in selected_channels:
+                continue
+            if any(pd.isna(row[col]) for col in ["Half-life", "Steepness", "Saturation", "Coefficient"]):
+                continue
+    
+            media_vehicle = row["Variable Name"]
+    
+            half_life = row["Half-life"]
+            steepness = row["Steepness"]
+            saturation = row["Saturation"]
+            coef = row["Coefficient"]
+    
+            # 🔁 RECOMPUTE PER CHANNEL
+            execution_weeks = media_metrics_filtered[media_vehicle].fillna(0).values
+            current_execution = np.sum(execution_weeks)
+            current_spend = media_spends_filtered[media_vehicle].sum()
+    
+            adstocked_real = geometric_adstock(execution_weeks, half_life)
+            max_adstock = np.max(adstocked_real)
+    
+            current_inc_val = calculate_incremental(
+                execution_weeks, base_vol_weeks, weekly_price,
                 coef, half_life, steepness, saturation, max_adstock
             )
-
-            spend = current_spend * ratio
-
-            incremental_values.append(inc_val)
-            spend_values.append(spend)
-            roas_values.append(inc_val / spend if spend > 0 else 0)
-            marginal_roas_values.append(
-                (inc_val - prev_val) / (spend - prev_spend) if spend > prev_spend else 0
-            )
-
-            prev_val, prev_spend = inc_val, spend
-
-        # ✅ Build dataframe (now channel-specific)
-        df = pd.DataFrame({
-            "Spend": spend_values,
-            "Execution": executions_curve,
-            "Revenue": incremental_values,
-            "ROAS": roas_values,
-            "Marginal ROAS": marginal_roas_values,
-            "Current": ""
-        })
-
-        # Mark current point
-        closest_idx = np.argmin(np.abs(np.array(spend_values) - current_spend))
-        df.loc[closest_idx, "Current"] = current_inc_val
-
-        df.to_excel(writer, sheet_name=media_vehicle, index=False)
+    
+            curve_points = 200
+            executions_curve = np.linspace(0, 2 * current_execution, curve_points)
+    
+            incremental_values, spend_values, roas_values, marginal_roas_values = [], [], [], []
+    
+            prev_val, prev_spend = 0, 0
+            for ex in executions_curve:
+                ratio = ex / current_execution if current_execution > 0 else 0
+                scaled_execution = execution_weeks * ratio
+    
+                inc_val = calculate_incremental(
+                    scaled_execution, base_vol_weeks, weekly_price,
+                    coef, half_life, steepness, saturation, max_adstock
+                )
+    
+                spend = current_spend * ratio
+    
+                incremental_values.append(inc_val)
+                spend_values.append(spend)
+                roas_values.append(inc_val / spend if spend > 0 else 0)
+                marginal_roas_values.append(
+                    (inc_val - prev_val) / (spend - prev_spend) if spend > prev_spend else 0
+                )
+    
+                prev_val, prev_spend = inc_val, spend
+    
+            # ✅ Build dataframe (now channel-specific)
+            df = pd.DataFrame({
+                "Spend": spend_values,
+                "Execution": executions_curve,
+                "Revenue": incremental_values,
+                "ROAS": roas_values,
+                "Marginal ROAS": marginal_roas_values,
+                "Current": ""
+            })
+    
+            # Mark current point
+            closest_idx = np.argmin(np.abs(np.array(spend_values) - current_spend))
+            df.loc[closest_idx, "Current"] = current_inc_val
+    
+            df.to_excel(writer, sheet_name=media_vehicle, index=False)
     
     # ✅ Streamlit download button
     st.download_button(
