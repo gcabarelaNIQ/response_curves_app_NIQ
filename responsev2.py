@@ -33,72 +33,161 @@ def calculate_incremental(executions, base_vol_weeks, weekly_price, coef, half_l
 # === Streamlit Config ===
 st.set_page_config(page_title="Response Curve Generator", layout="wide")
 st.title("📈 Response Curve Generator")
-# ===============================
-# DEFAULT RESPONSE CURVE PLAYGROUND
-# ===============================
-st.set_page_config(page_title="Response Curve Generator", layout="wide")
-st.title("📈 Response Curve Generator")
-
 # ==================================================
 # RESPONSE CURVE PLAYGROUND (NO FILE REQUIRED)
 # ==================================================
 
 st.subheader("🧪 Response Curve Playground")
-st.caption("Visualise response curve shapes using MMM math (no ROI, no data, shape-only).")
+st.caption(
+    "Visualise response curve shapes using MMM math only. "
+    "This is a shape exercise (no ROI, no realism constraints)."
+)
+
+# ------------------
+# Parameter controls
+# ------------------
 
 col1, col2, col3 = st.columns(3)
 
 with col1:
-    hl_slider = st.slider("Half-life (Adstock)", 0.1, 5.0, 1.5, 0.1)
-    hl_value = st.number_input("Half-life value", 0.1, 5.0, value=hl_slider)
+    hl_slider = st.slider(
+        "Half-life (Adstock)",
+        min_value=0.1,
+        max_value=5.0,
+        value=1.5,
+        step=0.1
+    )
+    half_life = st.number_input(
+        "Half-life value",
+        min_value=0.1,
+        max_value=5.0,
+        value=hl_slider,
+        step=0.1
+    )
 
 with col2:
-    steep_slider = st.slider("Steepness", 0.1, 3.0, 1.0, 0.1)
-    steep_value = st.number_input("Steepness value", 0.1, 3.0, value=steep_slider)
+    steep_slider = st.slider(
+        "Steepness",
+        min_value=0.1,
+        max_value=3.0,
+        value=1.0,
+        step=0.1
+    )
+    steepness = st.number_input(
+        "Steepness value",
+        min_value=0.1,
+        max_value=3.0,
+        value=steep_slider,
+        step=0.1
+    )
 
 with col3:
-    sat_slider = st.slider("Saturation", 0.1, 0.9, 0.6, 0.05)
-    sat_value = st.number_input("Saturation value", 0.1, 0.9, value=sat_slider)
+    sat_slider = st.slider(
+        "Saturation",
+        min_value=0.1,
+        max_value=0.9,
+        value=0.6,
+        step=0.05
+    )
+    saturation = st.number_input(
+        "Saturation value",
+        min_value=0.1,
+        max_value=0.9,
+        value=sat_slider,
+        step=0.05
+    )
 
-half_life = hl_value
-steepness = steep_value
-saturation = sat_value
+# ------------------
+# Execution pattern
+# ------------------
 
-# ---------- Synthetic setup ----------
-weeks = 52
-base_vol = np.ones(weeks)
-weekly_price = np.ones(weeks)
-coef = 0.05  # arbitrary positive coef for shape
+st.markdown("### Execution Pattern")
 
-execution_grid = np.linspace(0, 100, 200)
+avg_weeks_slider = st.slider(
+    "Average continuous weeks",
+    min_value=1,
+    max_value=52,
+    value=13,
+    step=1
+)
+
+avg_weeks = st.number_input(
+    "Average continuous weeks (value)",
+    min_value=1,
+    max_value=52,
+    value=avg_weeks_slider,
+    step=1
+)
+
+st.caption(
+    "Lower values concentrate execution and reveal saturation faster. "
+    "Higher values approximate always‑on delivery."
+)
+
+# ------------------
+# Synthetic setup
+# ------------------
+
+total_weeks = 52
+base_volume = np.ones(total_weeks)     # flat base (shape only)
+coef = 0.05                             # arbitrary positive coef
+
+# Extend execution range so saturation is visible
+execution_grid = np.linspace(0, 5000, 300)
 incremental_values = []
 
-for ex in execution_grid:
-    weekly_exec = np.ones(weeks) * (ex / weeks)
+for total_exec in execution_grid:
+    weekly_exec = np.zeros(total_weeks)
+    weekly_exec[:avg_weeks] = total_exec / avg_weeks
+
     adstocked = geometric_adstock(weekly_exec, half_life)
     max_adstock = np.max(adstocked)
 
-    saturated = sigmoid_saturation(adstocked, steepness, saturation, max_adstock)
-    inc_val = np.sum((np.exp(coef * saturated) - 1) * base_vol)
-    incremental_values.append(inc_val)
+    saturated = sigmoid_saturation(
+        adstocked,
+        steepness,
+        saturation,
+        max_adstock
+    )
 
-fig_playground = go.Figure()
-fig_playground.add_trace(
-    go.Scatter(x=execution_grid, y=incremental_values, mode="lines", line=dict(width=3))
+    incremental_response = np.sum(
+        (np.exp(coef * saturated) - 1) * base_volume
+    )
+
+    incremental_values.append(incremental_response)
+
+# ------------------
+# Plot
+# ------------------
+
+fig = go.Figure()
+fig.add_trace(
+    go.Scatter(
+        x=execution_grid,
+        y=incremental_values,
+        mode="lines",
+        line=dict(width=3),
+        name="Response Curve"
+    )
 )
 
-fig_playground.update_layout(
+fig.update_layout(
     title="Response Curve Shape",
-    xaxis=dict(title="Execution (relative)", showticklabels=False),
-    yaxis=dict(title="Incremental Response (relative)", showticklabels=False),
+    xaxis=dict(
+        title="Execution (relative)",
+        showticklabels=False
+    ),
+    yaxis=dict(
+        title="Incremental Response (relative)",
+        showticklabels=False
+    ),
     showlegend=False,
-    margin=dict(t=60, b=40)
+    margin=dict(t=70, b=40)
 )
 
-st.plotly_chart(fig_playground, use_container_width=True)
+st.plotly_chart(fig, use_container_width=True)
 
 st.divider()
-
 # === Instruction Message ===
 st.markdown("""
 **⚠️ Important:**  
