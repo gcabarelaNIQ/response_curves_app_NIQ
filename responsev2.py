@@ -13,15 +13,14 @@ st.title("📈 Response Curve Generator")
 
 # === MODE TOGGLE (PRO UX) ===
 
-left_col, _ = st.columns([3, 2])
 
-with left_col:
-    st.markdown("## 🔁 Analysis Mode")
+st.markdown("## 🔁 Analysis Mode")
+st.caption("Switch between model-fitted response curves and custom parameter simulations")
 
-    simulate_mode = st.toggle(
-        "Simulate Curve with Custom Half-Life, Steepness, and Saturation",
-        value=False
-    )
+simulate_mode = st.toggle(
+    "Simulate Curve with Custom Parameters",
+    value=False
+)
 
 
 mode = (
