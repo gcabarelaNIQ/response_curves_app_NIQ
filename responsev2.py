@@ -353,17 +353,3 @@ else:
 
     # ✅ Plot 1 SECOND (Execution curve)
     st.plotly_chart(fig_exec, use_container_width=True)
-
-"""else:
-    row = params_df[params_df["Variable Name"] == sim_channel].iloc[0]
-    exec_w = mm_f[sim_channel].fillna(0).values
-    plot_response_curves(
-        sim_channel,
-        exec_w,
-        exec_w.sum(),
-        ms_f[sim_channel].sum(),
-        row["Coefficient"],
-        sim_hl,
-        sim_stp,
-        sim_sat
-    )
