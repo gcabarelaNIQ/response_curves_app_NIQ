@@ -8,84 +8,97 @@ import io
 from io import BytesIO
 from datetime import datetime
 
+    # Functions
+    def geometric_adstock(x, half_life):
+        decay = 0.5 ** (1 / half_life)
+        adstocked = np.zeros_like(x)
+        adstocked[0] = x[0]
+        for t in range(1, len(x)):
+            adstocked[t] = x[t] + decay * adstocked[t - 1]
+        return adstocked
+
+    def sigmoid_saturation(adstocked, steepness, saturation, max_adstock):
+        return (max_adstock / (1 + np.exp(-10 * steepness / max_adstock * (adstocked - saturation * max_adstock)))) -(max_adstock / (1 + np.exp(-10 * steepness / max_adstock * (0 - saturation * max_adstock))))
+
+
+    def calculate_incremental(executions, base_vol_weeks, weekly_price, coef, half_life, steepness, saturation, max_adstock):
+        adstocked = geometric_adstock(executions, half_life)
+        saturated = sigmoid_saturation(adstocked, steepness, saturation, max_adstock)
+        incremental_val_total = 0
+        for i in range(len(executions)):
+            inc_vol_week = (np.exp(coef * saturated[i]) - 1) * base_vol_weeks[i]
+            inc_val_week = inc_vol_week * weekly_price[i]
+            incremental_val_total += inc_val_week
+        return incremental_val_total
+
 # === Streamlit Config ===
 st.set_page_config(page_title="Response Curve Generator", layout="wide")
 st.title("📈 Response Curve Generator")
 # ===============================
 # DEFAULT RESPONSE CURVE PLAYGROUND
 # ===============================
+st.set_page_config(page_title="Response Curve Generator", layout="wide")
+st.title("📈 Response Curve Generator")
 
-st.subheader("🧪 Response Curve Playground (Shape Only)")
+# ==================================================
+# RESPONSE CURVE PLAYGROUND (NO FILE REQUIRED)
+# ==================================================
 
-st.markdown("""
-This section is **purely illustrative**.  
-It shows how **Adstock, Steepness and Saturation** shape a response curve,  
-using the **same math as the MMM curves**, but with synthetic data.
-""")
+st.subheader("🧪 Response Curve Playground")
+st.caption("Visualise response curve shapes using MMM math (no ROI, no data, shape-only).")
 
 col1, col2, col3 = st.columns(3)
 
-# ---- Parameter controls (slider + input synced) ----
 with col1:
-    hl_slider = st.slider("Half-life (Adstock)", 1.0, 30.0, 8.0, 0.5)
-    hl_value = st.number_input("Half-life value", value=hl_slider)
+    hl_slider = st.slider("Half-life (Adstock)", 0.1, 5.0, 1.5, 0.1)
+    hl_value = st.number_input("Half-life value", 0.1, 5.0, value=hl_slider)
 
 with col2:
-    steep_slider = st.slider("Steepness", 0.1, 5.0, 1.0, 0.1)
-    steep_value = st.number_input("Steepness value", value=steep_slider)
+    steep_slider = st.slider("Steepness", 0.1, 3.0, 1.0, 0.1)
+    steep_value = st.number_input("Steepness value", 0.1, 3.0, value=steep_slider)
 
 with col3:
-    sat_slider = st.slider("Saturation", 0.1, 1.5, 0.7, 0.05)
-    sat_value = st.number_input("Saturation value", value=sat_slider)
+    sat_slider = st.slider("Saturation", 0.1, 0.9, 0.6, 0.05)
+    sat_value = st.number_input("Saturation value", 0.1, 0.9, value=sat_slider)
 
-# ---- Keep slider and input in sync (input wins) ----
 half_life = hl_value
 steepness = steep_value
 saturation = sat_value
 
-# ---- Synthetic setup ----
+# ---------- Synthetic setup ----------
 weeks = 52
-base_volume = np.ones(weeks)               # flat base
-weekly_price = np.ones(weeks)              # irrelevant, kept for form consistency
-coef = 0.05                                 # arbitrary positive coefficient
+base_vol = np.ones(weeks)
+weekly_price = np.ones(weeks)
+coef = 0.05  # arbitrary positive coef for shape
 
 execution_grid = np.linspace(0, 100, 200)
 incremental_values = []
 
-# ---- Generate curve ----
 for ex in execution_grid:
     weekly_exec = np.ones(weeks) * (ex / weeks)
-
     adstocked = geometric_adstock(weekly_exec, half_life)
     max_adstock = np.max(adstocked)
 
     saturated = sigmoid_saturation(adstocked, steepness, saturation, max_adstock)
-    inc_val = np.sum((np.exp(coef * saturated) - 1) * base_volume)
-
+    inc_val = np.sum((np.exp(coef * saturated) - 1) * base_vol)
     incremental_values.append(inc_val)
 
-# ---- Plot ----
 fig_playground = go.Figure()
-
 fig_playground.add_trace(
-    go.Scatter(
-        x=execution_grid,
-        y=incremental_values,
-        mode="lines",
-        name="Response Curve",
-        line=dict(width=3)
-    )
+    go.Scatter(x=execution_grid, y=incremental_values, mode="lines", line=dict(width=3))
 )
 
 fig_playground.update_layout(
     title="Response Curve Shape",
-    xaxis=dict(showticklabels=False, title="Execution (relative)"),
-    yaxis=dict(showticklabels=False, title="Incremental Response (relative)"),
-    margin=dict(t=60, b=40),
-    showlegend=False
+    xaxis=dict(title="Execution (relative)", showticklabels=False),
+    yaxis=dict(title="Incremental Response (relative)", showticklabels=False),
+    showlegend=False,
+    margin=dict(t=60, b=40)
 )
 
 st.plotly_chart(fig_playground, use_container_width=True)
+
+st.divider()
 
 # === Instruction Message ===
 st.markdown("""
@@ -182,28 +195,6 @@ if uploaded_file:
     base_val_weeks = base_data_filtered["final_0_val"].values
     weekly_price = base_val_weeks / base_vol_weeks
 
-    # Functions
-    def geometric_adstock(x, half_life):
-        decay = 0.5 ** (1 / half_life)
-        adstocked = np.zeros_like(x)
-        adstocked[0] = x[0]
-        for t in range(1, len(x)):
-            adstocked[t] = x[t] + decay * adstocked[t - 1]
-        return adstocked
-
-    def sigmoid_saturation(adstocked, steepness, saturation, max_adstock):
-        return (max_adstock / (1 + np.exp(-10 * steepness / max_adstock * (adstocked - saturation * max_adstock)))) -(max_adstock / (1 + np.exp(-10 * steepness / max_adstock * (0 - saturation * max_adstock))))
-
-
-    def calculate_incremental(executions, base_vol_weeks, weekly_price, coef, half_life, steepness, saturation, max_adstock):
-        adstocked = geometric_adstock(executions, half_life)
-        saturated = sigmoid_saturation(adstocked, steepness, saturation, max_adstock)
-        incremental_val_total = 0
-        for i in range(len(executions)):
-            inc_vol_week = (np.exp(coef * saturated[i]) - 1) * base_vol_weeks[i]
-            inc_val_week = inc_vol_week * weekly_price[i]
-            incremental_val_total += inc_val_week
-        return incremental_val_total
 
     # Generate plots and HTML
     html_buffer = io.StringIO()
