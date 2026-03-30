@@ -14,28 +14,16 @@ st.title("📈 Response Curve Generator")
 # === MODE TOGGLE (PRO UX) ===
 
 
-st.markdown("""
-<style>
-/* Increase label font size */
-div[data-testid="stToggle"] label {
-    font-size: 1.2rem;
-}
-
-/* Optional: make switch slightly larger */
-div[data-testid="stToggle"] {
-    transform: scale(1.15);
-    transform-origin: left center;
-}
-</style>
-""", unsafe_allow_html=True)
+st.markdown("## Switch Analysis Mode 🔁")
+st.caption("Change between model‑fitted response curves and manual simulations of adstocked-saturated execution")
 
 simulate_mode = st.toggle(
-    "Simulate Curve with Custom Half-Life, Steppness, and Saturation Parameters",
+    "Simulate Curve with Custom Half-Life, Steepness, and Saturation Parameters",
     value=False
 )
 
 mode = (
-    "Simulate Curve with Custom Parameters"
+    "Simulate Curve with Custom Half-Life, Steepness, and Saturation Parameters"
     if simulate_mode
     else "Current Response Curves"
 )
@@ -177,7 +165,7 @@ base_val_weeks = bd_f["final_0_val"].values
 weekly_price = base_val_weeks / base_vol_weeks
 
 # === Simulation sliders ===
-if mode == "Simulate Curve with Custom Parameters":
+if mode == "Simulate Curve with Custom Half-Life, Steepness, and Saturation Parameters":
     st.subheader("Simulation parameters")
     c1, c2, c3 = st.columns(3)
     with c1:
