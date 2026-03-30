@@ -91,7 +91,7 @@ if uploaded_file:
 
     # Update status
     status.info("✅ File processed successfully! Ready to select options.")
-    st.write("✅ Found channels:", params_df["Variable Name"].tolist())
+    #st.write("✅ Found channels:", params_df["Variable Name"].tolist())
 
     # === UI Options ===
     st.subheader("Options")
