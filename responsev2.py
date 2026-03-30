@@ -11,6 +11,81 @@ from datetime import datetime
 # === Streamlit Config ===
 st.set_page_config(page_title="Response Curve Generator", layout="wide")
 st.title("📈 Response Curve Generator")
+# ===============================
+# DEFAULT RESPONSE CURVE PLAYGROUND
+# ===============================
+
+st.subheader("🧪 Response Curve Playground (Shape Only)")
+
+st.markdown("""
+This section is **purely illustrative**.  
+It shows how **Adstock, Steepness and Saturation** shape a response curve,  
+using the **same math as the MMM curves**, but with synthetic data.
+""")
+
+col1, col2, col3 = st.columns(3)
+
+# ---- Parameter controls (slider + input synced) ----
+with col1:
+    hl_slider = st.slider("Half-life (Adstock)", 1.0, 30.0, 8.0, 0.5)
+    hl_value = st.number_input("Half-life value", value=hl_slider)
+
+with col2:
+    steep_slider = st.slider("Steepness", 0.1, 5.0, 1.0, 0.1)
+    steep_value = st.number_input("Steepness value", value=steep_slider)
+
+with col3:
+    sat_slider = st.slider("Saturation", 0.1, 1.5, 0.7, 0.05)
+    sat_value = st.number_input("Saturation value", value=sat_slider)
+
+# ---- Keep slider and input in sync (input wins) ----
+half_life = hl_value
+steepness = steep_value
+saturation = sat_value
+
+# ---- Synthetic setup ----
+weeks = 52
+base_volume = np.ones(weeks)               # flat base
+weekly_price = np.ones(weeks)              # irrelevant, kept for form consistency
+coef = 0.05                                 # arbitrary positive coefficient
+
+execution_grid = np.linspace(0, 100, 200)
+incremental_values = []
+
+# ---- Generate curve ----
+for ex in execution_grid:
+    weekly_exec = np.ones(weeks) * (ex / weeks)
+
+    adstocked = geometric_adstock(weekly_exec, half_life)
+    max_adstock = np.max(adstocked)
+
+    saturated = sigmoid_saturation(adstocked, steepness, saturation, max_adstock)
+    inc_val = np.sum((np.exp(coef * saturated) - 1) * base_volume)
+
+    incremental_values.append(inc_val)
+
+# ---- Plot ----
+fig_playground = go.Figure()
+
+fig_playground.add_trace(
+    go.Scatter(
+        x=execution_grid,
+        y=incremental_values,
+        mode="lines",
+        name="Response Curve",
+        line=dict(width=3)
+    )
+)
+
+fig_playground.update_layout(
+    title="Response Curve Shape",
+    xaxis=dict(showticklabels=False, title="Execution (relative)"),
+    yaxis=dict(showticklabels=False, title="Incremental Response (relative)"),
+    margin=dict(t=60, b=40),
+    showlegend=False
+)
+
+st.plotly_chart(fig_playground, use_container_width=True)
 
 # === Instruction Message ===
 st.markdown("""
